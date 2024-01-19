@@ -3,6 +3,7 @@
 // TODO: support both search terms or user's profiles
 // TODO: wait for selector rather than network idle
 // TODO: clean up, comment
+// TODO: tweetISODateTime doesn't work. Fix it.
 
 const puppeteer = require('puppeteer');
 
