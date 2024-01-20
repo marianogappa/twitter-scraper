@@ -1,8 +1,5 @@
 // TODO: read configs from config.json
 // TODO: timeout if couldn't find new tweets in 5 secs
-// TODO: support both search terms or user's profiles
-// TODO: wait for selector rather than network idle
-// TODO: tweetISODateTime doesn't work. Fix it.
 
 const puppeteer = require('puppeteer');
 
@@ -10,13 +7,28 @@ const configs = {
     twitterUsername: process.env.TWITTER_USERNAME,
     twitterPassword: process.env.TWITTER_PASSWORD,
     searchTerms: ['$BTC will'],
-    tweetsPerPage: 10,
+    urls: ['https://twitter.com/rovercrc'],
+    tweetsPerPage: 5,
     timeoutBetweenTweetsScraped: 5000,
     puppeteerLaunchOptions: { headless: false },
     nextLabel: 'Next',
     loginLabel: 'Log in',
     scrollByPixels: 100,
     scrollCooldownMillis: 100,
+}
+
+const urls = [
+    ...configs.urls,
+    ...configs.searchTerms.map((term) => `https://twitter.com/search?q=${encodeURIComponent(term)}&src=typed_query`),
+]
+
+console.log(urls);
+if (!configs.twitterUsername || !configs.twitterPassword) {
+    throw new Error('Please provide the TWITTER_USERNAME & TWITTER_PASSWORD environment variables; otherwise I cannot scrape!');
+}
+
+if (!urls) {
+    throw new Error('Please provide either `searchTerms` or `urls` so I have something to scrape!');
 }
 
 async function clickElementBySelectorAndText(page, selector, text) {
@@ -48,9 +60,8 @@ async function twitterlogIn(page) {
     const seen = {}
 
     // Loop over configs.searchTerms
-    for (let i = 0; i < configs.searchTerms.length; i++) {
-        const searchTerm = configs.searchTerms[i];
-        await page.goto(`https://twitter.com/search?q=${encodeURIComponent(searchTerm)}&src=typed_query`);
+    for (let i = 0; i < urls.length; i++) {
+        await page.goto(urls[i]);
         await page.waitForSelector('article[data-testid="tweet"]');
 
         // Extract tweet data
@@ -59,7 +70,12 @@ async function twitterlogIn(page) {
 
             while (Object.keys(curSearchSeen).length < configs.tweetsPerPage) {
                 document.querySelectorAll('article[data-testid="tweet"]').forEach((tweetElement) => {
-                    const url = Array.from(tweetElement.querySelectorAll("a")).find(obj => obj.href.includes("/status/")).href
+                    const url = Array.from(tweetElement.querySelectorAll("a")).find(obj => obj.href.includes("/status/")).href;
+
+                    const hasISODateTime = Array.from(tweetElement.querySelectorAll('time')).find(el => el.getAttribute('datetime'));
+                    if (!hasISODateTime) {
+                        return; // No ISODateTime means it's an ad rather than a tweet
+                    }
 
                     // Only scrape unscraped tweets
                     if (seen[url]) {
@@ -73,7 +89,7 @@ async function twitterlogIn(page) {
                         url,
                         tweetContent: tweetElement.querySelector('div[dir="auto"]').textContent,
                         tweetAuthor: tweetElement.querySelector('div[data-testid="User-Name"] a').href,
-                        tweetISODateTime: tweetElement.querySelector('time').datetime,
+                        tweetISODateTime: tweetElement.querySelector('time').getAttribute('datetime'),
                     }, null, 2));
                 })
 
