@@ -9,6 +9,7 @@ if (fs.existsSync('config.json')) {
   userConfig = JSON.parse(fs.readFileSync('config.json', 'utf8'));
 }
 
+// Combine default, user overrides, and read twitterUsername and twitterPassword from env
 const configs = {
     ...defaultConfig,
     ...userConfig,
