@@ -1,4 +1,5 @@
 const puppeteer = require('puppeteer');
+const fs = require('fs');
 
 // Load default config
 const defaultConfig = JSON.parse(fs.readFileSync('config.json.default', 'utf8'));
