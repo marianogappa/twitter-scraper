@@ -5,8 +5,8 @@ const puppeteer = require('puppeteer');
 const configs = {
     twitterUsername: process.env.TWITTER_USERNAME,
     twitterPassword: process.env.TWITTER_PASSWORD,
-    searchTerms: ['$BTC will'],
-    urls: ['https://twitter.com/rovercrc'],
+    searchTerms: ['cats'],
+    urls: ['https://twitter.com/nytimes'],
     tweetsPerPage: 5,
     timeoutBetweenTweetsScrapedSeconds: 5,
     timeoutForFirstTweetScrapedSeconds: 25,
