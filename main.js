@@ -2,7 +2,6 @@
 // TODO: timeout if couldn't find new tweets in 5 secs
 // TODO: support both search terms or user's profiles
 // TODO: wait for selector rather than network idle
-// TODO: clean up, comment
 // TODO: tweetISODateTime doesn't work. Fix it.
 
 const puppeteer = require('puppeteer');
@@ -16,9 +15,10 @@ const configs = {
     puppeteerLaunchOptions: { headless: false },
     nextLabel: 'Next',
     loginLabel: 'Log in',
+    scrollByPixels: 100,
+    scrollCooldownMillis: 100,
 }
 
-// A node function that accepts a selector and a string, and returns the first dom element satisfying the selector, but also whose content is exactly that string.
 async function clickElementBySelectorAndText(page, selector, text) {
     await page.evaluate(async (selector, text) => {
         Array.from(document.querySelectorAll(selector)).find(el => el.textContent.trim() === text).click();
@@ -26,10 +26,7 @@ async function clickElementBySelectorAndText(page, selector, text) {
 }
 
 async function twitterlogIn(page) {
-    // Navigate to Twitter login page
     await page.goto('https://twitter.com/login');
-
-    // Fill in login credentials and submit the form
     await page.waitForSelector('input[autocomplete="username"]');
     await page.type('input[autocomplete="username"]', configs.twitterUsername);
     await clickElementBySelectorAndText(page, "div", configs.nextLabel);
@@ -42,6 +39,8 @@ async function twitterlogIn(page) {
 (async () => {
     const browser = await puppeteer.launch(configs.puppeteerLaunchOptions);
     const page = await browser.newPage();
+
+    // Output console logs on terminal while evaluating in the browser
     page.on('console', (msg) => console.log(msg.text()));
 
     await twitterlogIn(page);
@@ -58,37 +57,34 @@ async function twitterlogIn(page) {
         await page.evaluate(async (seen, configs) => {
             const curSearchSeen = {};
 
-            while (Object.keys(curSearchSeen).length <= 10) {
+            while (Object.keys(curSearchSeen).length < configs.tweetsPerPage) {
                 document.querySelectorAll('article[data-testid="tweet"]').forEach((tweetElement) => {
                     const url = Array.from(tweetElement.querySelectorAll("a")).find(obj => obj.href.includes("/status/")).href
 
+                    // Only scrape unscraped tweets
                     if (seen[url]) {
                         return;
                     }
-
                     seen[url] = true;
                     curSearchSeen[url] = true;
 
-                    const tweetContent = tweetElement.querySelector('div[dir="auto"]').textContent;
-                    const tweetAuthor = tweetElement.querySelector('div[data-testid="User-Name"] a').href;
-                    const tweetISODateTime = tweetElement.querySelector('time').datetime;
-
+                    // Output new tweet
                     console.log(JSON.stringify({
                         url,
-                        tweetContent,
-                        tweetAuthor,
-                        tweetISODateTime
+                        tweetContent: tweetElement.querySelector('div[dir="auto"]').textContent,
+                        tweetAuthor: tweetElement.querySelector('div[data-testid="User-Name"] a').href,
+                        tweetISODateTime: tweetElement.querySelector('time').datetime,
                     }, null, 2));
                 })
 
-                window.scrollBy(0, 100);
+                // Scroll & wait before scraping again
+                window.scrollBy(0, configs.scrollByPixels);
                 await new Promise((resolve) => {
-                    setTimeout(resolve, 100);
+                    setTimeout(resolve, configs.scrollCooldownMillis);
                 });
             }
         }, seen, configs);
     }
 
-    // Close the browser
     await browser.close();
 })();
