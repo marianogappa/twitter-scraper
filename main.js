@@ -1,5 +1,4 @@
 // TODO: read configs from config.json
-// TODO: timeout if couldn't find new tweets in 5 secs
 
 const puppeteer = require('puppeteer');
 
@@ -9,7 +8,8 @@ const configs = {
     searchTerms: ['$BTC will'],
     urls: ['https://twitter.com/rovercrc'],
     tweetsPerPage: 5,
-    timeoutBetweenTweetsScraped: 5000,
+    timeoutBetweenTweetsScrapedSeconds: 5,
+    timeoutForFirstTweetScrapedSeconds: 25,
     puppeteerLaunchOptions: { headless: false },
     nextLabel: 'Next',
     loginLabel: 'Log in',
@@ -22,7 +22,6 @@ const urls = [
     ...configs.searchTerms.map((term) => `https://twitter.com/search?q=${encodeURIComponent(term)}&src=typed_query`),
 ]
 
-console.log(urls);
 if (!configs.twitterUsername || !configs.twitterPassword) {
     throw new Error('Please provide the TWITTER_USERNAME & TWITTER_PASSWORD environment variables; otherwise I cannot scrape!');
 }
@@ -53,20 +52,24 @@ async function twitterlogIn(page) {
     const page = await browser.newPage();
 
     // Output console logs on terminal while evaluating in the browser
-    page.on('console', (msg) => console.log(msg.text()));
+    page.on('console', (msg) => {
+        if (msg.text().startsWith("!!!")) {
+            console.log(msg.text().slice(4))
+        }
+    });
 
     await twitterlogIn(page);
 
     const seen = {}
 
-    // Loop over configs.searchTerms
     for (let i = 0; i < urls.length; i++) {
         await page.goto(urls[i]);
         await page.waitForSelector('article[data-testid="tweet"]');
 
-        // Extract tweet data
         await page.evaluate(async (seen, configs) => {
             const curSearchSeen = {};
+            const startedAtMillis = new Date().getTime();
+            let lastNewTweetAt = null;
 
             while (Object.keys(curSearchSeen).length < configs.tweetsPerPage) {
                 document.querySelectorAll('article[data-testid="tweet"]').forEach((tweetElement) => {
@@ -83,15 +86,29 @@ async function twitterlogIn(page) {
                     }
                     seen[url] = true;
                     curSearchSeen[url] = true;
+                    lastNewTweetAt = new Date();
 
                     // Output new tweet
-                    console.log(JSON.stringify({
+                    console.log("!!!", JSON.stringify({
                         url,
                         tweetContent: tweetElement.querySelector('div[dir="auto"]').textContent,
                         tweetAuthor: tweetElement.querySelector('div[data-testid="User-Name"] a').href,
                         tweetISODateTime: tweetElement.querySelector('time').getAttribute('datetime'),
                     }, null, 2));
+
                 })
+
+                const nowMillis = new Date().getTime()
+
+                // For the current url, it took longer than the timeout to scrape the first tweet
+                if (!lastNewTweetAt && (nowMillis - startedAtMillis) / 1000 > configs.timeoutForFirstTweetScrapedSeconds) {
+                    return;
+                }
+
+                // For the current url, it took longer than the timeout to scrape the next new tweet
+                if (lastNewTweetAt && (nowMillis - lastNewTweetAt) / 1000 > configs.timeoutBetweenTweetsScrapedSeconds) {
+                    return;
+                }
 
                 // Scroll & wait before scraping again
                 window.scrollBy(0, configs.scrollByPixels);
