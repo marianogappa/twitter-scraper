@@ -14,6 +14,8 @@ const configs = {
     tweetsPerPage: 10,
     timeoutBetweenTweetsScraped: 5000,
     puppeteerLaunchOptions: { headless: false },
+    nextLabel: 'Siguiente',
+    loginLabel: 'Iniciar sesión'
 }
 
 // A node function that accepts a selector and a string, and returns the first dom element satisfying the selector, but also whose content is exactly that string.
@@ -51,14 +53,16 @@ async function clickElementBySelectorAndText(page, selector, text) {
 
 async function twitterlogIn(page) {
     // Navigate to Twitter login page
-    await page.goto('https://twitter.com/login', { waitUntil: 'networkidle0' });
+    await page.goto('https://twitter.com/login');
 
     // Fill in login credentials and submit the form
+    console.log("config.TWITTER_USERNAME ", configs.twitterUsername);
+    await page.waitForSelector('input[autocomplete="username"]');
     await page.type('input[autocomplete="username"]', configs.twitterUsername);
-    await clickElementBySelectorAndText(page, "div", "Next");
+    await clickElementBySelectorAndText(page, "div", configs.nextLabel);
     await page.waitForSelector('input[autocomplete="current-password"]');
     await page.type('input[autocomplete="current-password"]', configs.twitterPassword);
-    await clickElementBySelectorAndText(page, "div[role='button']", "Log in");
+    await clickElementBySelectorAndText(page, "div[role='button']", configs.loginLabel);
     await page.waitForSelector('article[data-testid="tweet"]');
 }
 
