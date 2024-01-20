@@ -14,8 +14,8 @@ const configs = {
     tweetsPerPage: 10,
     timeoutBetweenTweetsScraped: 5000,
     puppeteerLaunchOptions: { headless: false },
-    nextLabel: 'Siguiente',
-    loginLabel: 'Iniciar sesión'
+    nextLabel: 'Next',
+    loginLabel: 'Log in'
 }
 
 // A node function that accepts a selector and a string, and returns the first dom element satisfying the selector, but also whose content is exactly that string.
