@@ -1,20 +1,19 @@
-// TODO: read configs from config.json
-
 const puppeteer = require('puppeteer');
 
+// Load default config
+const defaultConfig = JSON.parse(fs.readFileSync('config.json.default', 'utf8'));
+
+// Load user-specific overrides from config.json if it exists
+let userConfig = {};
+if (fs.existsSync('config.json')) {
+  userConfig = JSON.parse(fs.readFileSync('config.json', 'utf8'));
+}
+
 const configs = {
+    ...defaultConfig,
+    ...userConfig,
     twitterUsername: process.env.TWITTER_USERNAME,
-    twitterPassword: process.env.TWITTER_PASSWORD,
-    searchTerms: ['cats'],
-    urls: ['https://twitter.com/nytimes'],
-    tweetsPerPage: 5,
-    timeoutBetweenTweetsScrapedSeconds: 5,
-    timeoutForFirstTweetScrapedSeconds: 25,
-    puppeteerLaunchOptions: { headless: false },
-    nextLabel: 'Next',
-    loginLabel: 'Log in',
-    scrollByPixels: 100,
-    scrollCooldownMillis: 100,
+    twitterPassword: process.env.TWITTER_PASSWORD
 }
 
 const urls = [

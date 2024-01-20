@@ -1,0 +1,12 @@
+{
+  "searchTerms": ["cats"],
+  "urls": ["https://twitter.com/nytimes"],
+  "tweetsPerPage": 5,
+  "timeoutBetweenTweetsScrapedSeconds": 5,
+  "timeoutForFirstTweetScrapedSeconds": 25,
+  "puppeteerLaunchOptions": { "headless": false },
+  "nextLabel": "Next",
+  "loginLabel": "Log in",
+  "scrollByPixels": 100,
+  "scrollCooldownMillis": 100
+}
