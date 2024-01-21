@@ -1,19 +1,11 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 
-// Load default config
-const defaultConfig = JSON.parse(fs.readFileSync('config.json.default', 'utf8'));
+const loadConfig = (path) => fs.existsSync(path) ? JSON.parse(fs.readFileSync(path, 'utf8')) : {};
 
-// Load user-specific overrides from config.json if it exists
-let userConfig = {};
-if (fs.existsSync('config.json')) {
-  userConfig = JSON.parse(fs.readFileSync('config.json', 'utf8'));
-}
-
-// Combine default, user overrides, and read twitterUsername and twitterPassword from env
 const configs = {
-    ...defaultConfig,
-    ...userConfig,
+    ...loadConfig('config.json.default'),
+    ...loadConfig('config.json'),
     twitterUsername: process.env.TWITTER_USERNAME,
     twitterPassword: process.env.TWITTER_PASSWORD
 }
